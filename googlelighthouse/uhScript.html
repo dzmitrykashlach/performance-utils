@@ -1,0 +1,36 @@
+<!-- should be put in the beginning of body after uhPlaceholder -->
+<script id='uhScript' type='text/javascript' src='https://apps-qa.wdf.sap.corp/uh/new/uhScript.js' onload="window.performance.clearMarks('uhScript'); window.performance.mark('uhScript')">
+<script>
+    window.performance.clearMarks('uhScript'); // clear if its already loaded
+    window.performance.mark('uhScript');
+	  window.enwikiMetrics = window.performance.getEntriesByType('mark')[0].startTime;
+</script>
+
+<!--
+Initial body html
+====================================================================================================
+
+<div style='display:block'>
+<div id='uhPlaceholder'>
+<script id='uhScript' type='text/javascript' src='https://apps-qa.wdf.sap.corp/uh/new/uhScript.js' >
+  uhSiteConfig({
+    deferredLoading: true,
+    site: {
+      name: 'Wiki',
+      system: 'STAG',
+      title: 'Document and publish with colleagues',
+      subTitle: 'Employee Network',
+      homeUrl: '/wiki',
+      access: 'internal' ,
+      withoutSearchbar: true,
+      fixedOnTop: false
+    }
+  });
+</script>
+</div>
+
+<div style='background-color:yellow; text-align:center; '>
+<b><a href='https://wiki.wdf.sap.corp/x/YBaWQQ'></a></b>
+</div>
+</div>
+ -->
