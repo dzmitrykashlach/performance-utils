@@ -1,0 +1,71 @@
+// Define environment type for
+def PROJECT_ID = env.JOB_BASE_NAME.contains("scnwiki") ? "SCNWIKI" : "ENWIKI"
+def ENV_TYPE = PROJECT_ID == "SCNWIKI" ? "qa" : "stag"
+
+
+def STAG_Z4_HOST = env.JOB_BASE_NAME.contains("Z4") ? ",\"host\":\"wiki-stag.c.eu-de-2.cloud.sap\"":""
+def COMMON_SETTINGS = "\"project_id\": \"${PROJECT_ID}\", \"env_type\": \"${ENV_TYPE}\", \"test_type\": \"load\", \"service_project\":\"service\""
+
+def CLIENT_SETTINGS_WARM_UP = """{${COMMON_SETTINGS}, "jmeter_variables":{"duration": "900"${STAG_Z4_HOST}}, "nft_env": "prod"}"""
+def CLIENT_SETTINGS_LOAD_1H = """{${COMMON_SETTINGS}, "jmeter_variables":{"duration": "3600"${STAG_Z4_HOST}}, "nft_env": "prod"}"""
+//duration is temporarily reduced to 5h in order to remove overlapping between Z3 & Z4 tests and will be restored back to 8h after Z4 go-live;
+def CLIENT_SETTINGS_LOAD_5H = """{${COMMON_SETTINGS}, "jmeter_variables":{"duration": "18000"${STAG_Z4_HOST}},"nft_env": "prod"}"""
+
+def cron_schedule(project_id){
+ if(project_id=="SCNWIKI"){
+   return 'H 2 * * *'
+ }else{
+   if(env.JOB_BASE_NAME.contains("Z4")){
+   return 'H 16 * * *'
+   }
+   if(env.JOB_BASE_NAME.contains("Z3")){
+   return 'H 23 * * *'
+   }
+ }
+}
+
+pipeline {
+    agent none
+    triggers { cron("${cron_schedule(env.PROJECT_ID)}") }
+
+
+    stages {
+        stage('echo PROJECT_ID & ENV_TYPE') {
+            steps {
+                echo "NFT PROJECT_ID - ${PROJECT_ID}"
+                echo "NFT ENV_TYPE - ${ENV_TYPE}"
+
+            }
+        }
+// NFT 2.0-prod-performance contains pipeline from https://github.wdf.sap.corp/nft/framework_jenkins_pipeline
+// Guideline about integrating NFT 2.0 into Jenkins - https://wiki.wdf.sap.corp/wiki/display/PMP/How+to+integrate+NFT+2.0+into+Jenkins
+        stage('nft warmup test - 15min') {
+            steps {
+                catchError(stageResult: 'FAILURE', buildResult: currentBuild.result) {
+                    build job: 'NFT 2.0-prod-performance', parameters: [
+                            string(name: 'client_settings', value: "${CLIENT_SETTINGS_WARM_UP}")
+                    ]
+                }
+            }
+        }
+
+        stage('nft load test - 1h') {
+            steps {
+                catchError(stageResult: 'FAILURE', buildResult: currentBuild.result) {
+                     build job: 'NFT 2.0-prod-performance', parameters: [
+                        string(name: 'client_settings', value: "${CLIENT_SETTINGS_LOAD_1H}")
+                     ]
+                }
+            }
+
+        }
+
+        stage('nft load test - 5h') {
+            steps {
+                build job: 'NFT 2.0-prod-performance', parameters: [
+                        string(name: 'client_settings', value: "${CLIENT_SETTINGS_LOAD_5H}")
+                ]
+            }
+        }
+    }
+}

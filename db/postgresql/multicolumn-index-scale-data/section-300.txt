@@ -1,0 +1,28 @@
+clean scan:
+=========================================================================
+Parallel Seq Scan on scale_data  (cost=0.00..1209176.72 rows=582 width=0)
+(actual time=70012.767..70040.074 rows=3012 loops=3)
+Filter: ((section = '300'::numeric) AND (id2 = '2'::numeric))
+Rows Removed by Filter: 45146988
+Execution Time: 104 680.864 ms
+
+scale_slow
+=========================================================================
+Aggregate  (cost=33065.43..33065.44 rows=1 width=8) (actual time=783.824..783.826 rows=1 loops=1)
+  ->  Bitmap Heap Scan on scale_data  (cost=20121.92..33056.96 rows=3386 width=0) (actual time=54.562..782.344 rows=9037 loops=1)
+        Recheck Cond: ((section = '300'::numeric) AND (id2 = '2'::numeric))
+        Heap Blocks: exact=4569
+        ->  Bitmap Index Scan on scale_slow  (cost=0.00..20121.07 rows=3386 width=0) (actual time=54.038..54.039 rows=9037 loops=1)
+              Index Cond: ((section = '300'::numeric) AND (id2 = '2'::numeric))
+Planning Time: 2.751 ms
+Execution Time: 784.669 ms
+
+
+scale_fast
+=========================================================================
+Aggregate  (cost=12689.73..12689.74 rows=1 width=8) (actual time=2.239..2.240 rows=1 loops=1)
+  ->  Index Only Scan using scale_fast on scale_data  (cost=0.57..12671.99 rows=7093 width=0) (actual time=0.049..1.923 rows=8998 loops=1)
+        Index Cond: ((section = '300'::numeric) AND (id2 = '2'::numeric))
+        Heap Fetches: 8998
+Planning Time: 0.253 ms
+Execution Time: 2.266 ms

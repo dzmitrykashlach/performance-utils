@@ -1,0 +1,35 @@
+def PROJECT_ID = env.JOB_BASE_NAME.contains("scnwiki") ? "SCNWIKI" : "ENWIKI"
+def STAG_Z4_HOST = env.JOB_BASE_NAME.contains("Z4") ? ",\"host\":\"wiki-stag.c.eu-de-2.cloud.sap\"":""
+def ENV_TYPE = PROJECT_ID == "SCNWIKI" ? "qa" : "stag"
+
+pipeline {
+    agent none
+    parameters {
+        string(name: "duration", defaultValue: "3600", description: "Load test custom duration")
+    }
+
+    stages {
+        stage('echo PROJECT_ID & ENV_TYPE') {
+            steps {
+                echo "NFT PROJECT_ID - ${PROJECT_ID}"
+                echo "NFT ENV_TYPE - ${ENV_TYPE}"
+
+            }
+        }
+// NFT 2.0-prod-performance contains pipeline from https://github.wdf.sap.corp/nft/framework_jenkins_pipeline
+// Guideline about integrating NFT 2.0 into Jenkins - https://wiki.wdf.sap.corp/wiki/display/PMP/How+to+integrate+NFT+2.0+into+Jenkins
+        stage('nft load test') {
+            steps {
+                    build job: 'NFT 2.0-prod-performance', parameters: [
+                            string(name: 'client_settings',
+                            value: """{"project_id": "${PROJECT_ID}",
+                                       "env_type": "${ENV_TYPE}",
+                                       "test_type": "load",
+                                       "service_project":"service",
+                                       "jmeter_variables":{"duration": "$params.duration"${STAG_Z4_HOST}},
+                                        "nft_env": "prod"}""")
+                    ]
+            }
+        }
+    }
+}
